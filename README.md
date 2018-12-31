@@ -15,8 +15,19 @@ $ go run main.go kubenetes.go -api=<PKS-API-ENDPOINT> -cluster=<CLUSTER-EXTERNAL
 # Compile to binary
 Your can also compile to binaries as
 ``` sh
-$ go build -o kubnectl-pks-token  main.go kubenetes.go
+$ go build -o kubectl-pkstoken  main.go kubenetes.go
 ```
+
+# Run as a kubectl plugin:
+```sh
+cp kubectl-pkstoken /usr/local/bin
+```
+
+then run 
+```sh
+kubectl pkstoken
+```
+
 
 # Dont forget to add a Role and Binding for the user like this:
 

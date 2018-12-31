@@ -73,10 +73,10 @@ func main() {
 	var USER string
 	var NS string
 	var INSECURE_SSL bool
-	flag.StringVar(&API, "api", "", "PKS APi key")
-	flag.StringVar(&CLUSTER, "cluster", "", "Kubernetes cluster mater")
+	flag.StringVar(&API, "api", "", "PKS API hostname")
+	flag.StringVar(&CLUSTER, "cluster", "", "Kubernetes cluster master")
 	flag.StringVar(&USER, "user", "", "LDAP username to connect to the cluster")
-	flag.StringVar(&NS, "ns", "default", "LDAP namespece associated with this user")
+	flag.StringVar(&NS, "ns", "default", "namespece associated with this user")
 	flag.BoolVar(&INSECURE_SSL, "insecure-ssl", true, "Accept/Ignore all server SSL certificates")
 	flag.Parse()
 	if help {
