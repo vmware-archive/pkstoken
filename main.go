@@ -79,6 +79,7 @@ func main() {
 		log.Print(err.Error())
 		os.Exit(-1)
 	}
+
 	err = kubernetes.ExportFile()
 	if err != nil {
 		log.Printf("Failed to export file %s", err.Error())
