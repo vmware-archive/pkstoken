@@ -14,3 +14,4 @@
 *.out
 .goreleaser_token
 dist/
+pks-token.zip

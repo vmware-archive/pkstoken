@@ -10,12 +10,24 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+func usefile(path string) error {
+	filename := path
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		_, err := os.Create(filename)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	var help bool
 	flag.BoolVar(&help, "help", false, "Show script help")
 	var API string
 	var CLUSTER string
 	var USER string
+	var KUBECONFIG string
 	var NS string
 	var INSECURE_SSL bool
 	var bytePassword []byte
@@ -25,6 +37,7 @@ func main() {
 	flag.StringVar(&CLUSTER, "cluster", "", "Kubernetes cluster master")
 	flag.StringVar(&USER, "user", "", "LDAP username to connect to the cluster")
 	flag.StringVar(&NS, "ns", "default", "namespece associated with this user")
+	flag.StringVar(&KUBECONFIG, "kubeconfig", "", "Operate on a non default kubeconfig")
 	flag.BoolVar(&INSECURE_SSL, "insecure-ssl", true, "Accept/Ignore all server SSL certificates")
 	flag.Parse()
 	if help {
@@ -33,6 +46,14 @@ func main() {
 		fmt.Println()
 		fmt.Println("Copyright 2019 Pivotal")
 		os.Exit(0)
+	}
+
+	if KUBECONFIG != "" {
+		err := usefile(KUBECONFIG)
+		if err != nil {
+			log.Println(err.Error())
+			os.Exit(-1)
+		}
 	}
 	// Validate values are available
 	commands := []string{"api", "cluster", "user", "ns"}
@@ -64,7 +85,7 @@ func main() {
 	}
 
 	//log.Printf("PWD: %s", password)
-	kubernetes := NewKubernetesCmd(API, USER, CLUSTER, NS, password, INSECURE_SSL)
+	kubernetes := NewKubernetesCmd(API, USER, CLUSTER, NS, KUBECONFIG, password, INSECURE_SSL)
 	err = kubernetes.Authenticate()
 	if err != nil {
 		log.Println(err.Error())

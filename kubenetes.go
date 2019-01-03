@@ -25,13 +25,14 @@ type KubernetesCmd struct {
 	Api              string
 	User             string
 	Password         string
+	kubeconfig       string
 	Cluster          string
 	ClusterNamespace string
 	UseInsecureCerts bool
 	netClient        http.Client
 }
 
-func NewKubernetesCmd(api, username, cluster, namespace, password string, insecureSsl bool) KubernetesCmd {
+func NewKubernetesCmd(api, username, cluster, namespace, kubeconfig string, password string, insecureSsl bool) KubernetesCmd {
 	config := &tls.Config{
 		InsecureSkipVerify: insecureSsl,
 	}
@@ -41,6 +42,7 @@ func NewKubernetesCmd(api, username, cluster, namespace, password string, insecu
 		Api:              api,
 		User:             username,
 		Cluster:          cluster,
+		kubeconfig:       kubeconfig,
 		ClusterNamespace: namespace,
 		Password:         password,
 		netClient: http.Client{
@@ -99,19 +101,19 @@ func (kc *KubernetesCmd) Authenticate() error {
 
 func (kc KubernetesCmd) ConfigureCluster(certFile string) error {
 	serverUrl := fmt.Sprintf("https://%s:8443", kc.Cluster)
-	res, err := kc.ExecuteCommand("kubectl", "config", "set-cluster", kc.Cluster, "--server", serverUrl, "--certificate-authority", certFile, "--insecure-skip-tls-verify=false", "--embed-certs=true")
+	res, err := kc.ExecuteCommand("config", "set-cluster", kc.Cluster, "--server", serverUrl, "--certificate-authority", certFile, "--insecure-skip-tls-verify=false", "--embed-certs=true")
 	if err != nil {
 		log.Printf("Configure cert :%s", err.Error())
 		return err
 	}
 	log.Println(res)
-	res, err = kc.ExecuteCommand("kubectl", "config", "set-context", kc.Cluster, "--cluster", kc.Cluster, "--user", kc.User, "--namespace", kc.ClusterNamespace)
+	res, err = kc.ExecuteCommand("config", "set-context", kc.Cluster, "--cluster", kc.Cluster, "--user", kc.User, "--namespace", kc.ClusterNamespace)
 	if err != nil {
 		log.Printf("Configure context %s", err.Error())
 		return err
 	}
 	log.Println(res)
-	res, err = kc.ExecuteCommand("kubectl", "config", "use-context", kc.Cluster)
+	res, err = kc.ExecuteCommand("config", "use-context", kc.Cluster)
 	log.Println(res)
 
 	log.Printf("Deleting certificate temp file %s", certFile)
@@ -124,7 +126,7 @@ func (kc KubernetesCmd) GoConfig() error {
 }
 func (kc KubernetesCmd) ExportFile() error {
 	serverUrl := fmt.Sprintf("https://%s:8443", kc.Api)
-	res, err := kc.ExecuteCommand("kubectl", "config", "set-credentials", kc.User,
+	res, err := kc.ExecuteCommand("config", "set-credentials", kc.User,
 		"--auth-provider=oidc",
 		"--auth-provider-arg=client-id=pks_cluster_client",
 		"--auth-provider-arg=cluster_client_secret=",
@@ -163,8 +165,15 @@ func (kc KubernetesCmd) GetCertificate() string {
 	}
 	return ""
 }
-func (kc KubernetesCmd) ExecuteCommand(name string, command ...string) (string, error) {
-	cmd := exec.Command(name, command...)
+func (kc KubernetesCmd) ExecuteCommand(command ...string) (string, error) {
+
+	baseCommand := command
+	if kc.kubeconfig != "" {
+		baseCommand = append([]string{kc.kubeconfig}, baseCommand...)
+		baseCommand = append([]string{"--kubeconfig"}, baseCommand...)
+	}
+
+	cmd := exec.Command("kubectl", baseCommand...) //Execute without kubeconfig option
 	log.Printf("%v", cmd.Args)
 	out, err := cmd.CombinedOutput()
 	log.Print(string(out))
