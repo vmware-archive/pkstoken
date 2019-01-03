@@ -28,7 +28,10 @@ func main() {
 	flag.BoolVar(&INSECURE_SSL, "insecure-ssl", true, "Accept/Ignore all server SSL certificates")
 	flag.Parse()
 	if help {
+		fmt.Println("This tool collects all required information to build a KUBECONFIG for LDAP/OIDC systems in Pivotal Container Service")
 		flag.Usage()
+		fmt.Println()
+		fmt.Println("Copyright 2019 Pivotal")
 		os.Exit(0)
 	}
 	// Validate values are available
