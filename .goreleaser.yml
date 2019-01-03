@@ -7,15 +7,16 @@ before:
     # # you may remove this if you don't need go generate
     # - go generate ./...
 builds:
--  binary: pks-token
-- env:
-  - CGO_ENABLED=0
-  goos:
-  - linux
-  - darwin
-  - windows
-  goarch:
-  - amd64
+  - env:
+    - CGO_ENABLED=0
+    goos:
+    - linux
+    - darwin
+    - windows
+    goarch:
+    - amd64
+    - 386
+    binary: pks-token
 archive:
   replacements:
     darwin: Darwin
