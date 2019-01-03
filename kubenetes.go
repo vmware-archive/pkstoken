@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -112,6 +113,9 @@ func (kc KubernetesCmd) ConfigureCluster(certFile string) error {
 	log.Println(res)
 	res, err = kc.ExecuteCommand("kubectl", "config", "use-context", kc.Cluster)
 	log.Println(res)
+
+	log.Printf("Deleting certificate temp file %s", certFile)
+	defer os.Remove(certFile)
 	return err
 }
 func (kc KubernetesCmd) GoConfig() error {
@@ -147,13 +151,14 @@ func (kc KubernetesCmd) GetCertificate() string {
 	for _, c := range response.TLS.PeerCertificates {
 		if c.IsCA {
 			//log.Print(string(c.Raw))
-			certOut, _ := os.Create(fmt.Sprintf("%s-cert.pem", kc.Cluster))
+			certOut, _ := ioutil.TempFile("", "pks-token-cert-")
+			//certOut, _ := os.Create(fmt.Sprintf("%s-cert.pem", kc.Cluster))
 			err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: c.Raw})
 			if err != nil {
 				log.Printf("Error generating certifciate %s", err.Error())
 			}
-			cwd, _ := os.Getwd()
-			return fmt.Sprintf("%s/%s", cwd, certOut.Name())
+
+			return fmt.Sprintf("%s", certOut.Name())
 		}
 	}
 	return ""
