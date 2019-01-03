@@ -1,70 +1,15 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
+	"syscall"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-func GetChar(r io.Reader) (byte, error) {
-	buf := make([]byte, 1)
-	if n, err := r.Read(buf); n == 0 || err != nil {
-		if err != nil {
-			return 0, err
-		}
-		return 0, io.EOF
-	}
-	return buf[0], nil
-}
-
-func ReadPassword(prompt string) (string, error) {
-	r := os.Stdin
-	w := os.Stdout
-	fmt.Fprint(w, prompt)
-	var pass []byte
-	// Redirect input to mask password input
-	state, errs := terminal.MakeRaw(int(r.Fd()))
-	if errs != nil {
-		return string(pass), errs
-	}
-	// Defer restoration of input reader
-	defer func() {
-		terminal.Restore(int(r.Fd()), state)
-		fmt.Fprintln(w)
-	}()
-
-	// Read password
-	maxLength := 1024
-
-	var counter int
-	var err error
-
-	for counter = 0; counter <= maxLength; counter++ {
-		if v, e := GetChar(r); e != nil {
-			err = e
-			break
-		} else if v == 127 || v == 8 {
-			if l := len(pass); l > 0 {
-				pass = pass[:l-1]
-				fmt.Fprint(w, "*")
-			}
-		} else if v == 13 || v == 10 {
-			break
-		} else if v == 3 {
-			err = errors.New("Interrupted")
-			break
-		} else if v != 0 {
-			pass = append(pass, v)
-			fmt.Fprint(w, "*")
-		}
-	}
-	return string(pass), err
-}
 func main() {
 	var help bool
 	flag.BoolVar(&help, "help", false, "Show script help")
@@ -73,6 +18,9 @@ func main() {
 	var USER string
 	var NS string
 	var INSECURE_SSL bool
+	var bytePassword []byte
+	var password string
+
 	flag.StringVar(&API, "api", "", "PKS API hostname")
 	flag.StringVar(&CLUSTER, "cluster", "", "Kubernetes cluster master")
 	flag.StringVar(&USER, "user", "", "LDAP username to connect to the cluster")
@@ -101,11 +49,17 @@ func main() {
 		os.Exit(-1)
 	}
 	// Read password
-	password, err := ReadPassword("Password: ")
+	fmt.Printf("Password for user %s: ", USER)
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	password = string(bytePassword)
+
+	// password, err := crypto  ReadPassword("Password: ")
+
 	if err != nil {
 		log.Fatalf("Error reading password %s", err.Error())
 		os.Exit(-1)
 	}
+
 	//log.Printf("PWD: %s", password)
 	kubernetes := NewKubernetesCmd(API, USER, CLUSTER, NS, password, INSECURE_SSL)
 	err = kubernetes.Authenticate()
