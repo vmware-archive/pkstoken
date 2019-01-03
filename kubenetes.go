@@ -125,7 +125,7 @@ func (kc KubernetesCmd) GoConfig() error {
 	return nil
 }
 func (kc KubernetesCmd) ExportFile() error {
-	serverUrl := fmt.Sprintf("https://%s:8443", kc.Api)
+	serverUrl := fmt.Sprintf("https://%s:8443/%s", kc.Api, "oauth/token")
 	res, err := kc.ExecuteCommand("config", "set-credentials", kc.User,
 		"--auth-provider=oidc",
 		"--auth-provider-arg=client-id=pks_cluster_client",
