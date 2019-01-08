@@ -18,6 +18,7 @@ func usefile(path string) error {
 			return err
 		}
 	}
+	log.Printf("using kubeconfig '%s'", filename)
 	return nil
 }
 
@@ -30,7 +31,6 @@ func main() {
 	var KUBECONFIG string
 	var NS string
 	var INSECURE_SSL bool
-	var bytePassword []byte
 	var password string
 
 	flag.StringVar(&API, "api", "", "PKS API hostname")
@@ -72,21 +72,24 @@ func main() {
 		flag.Usage()
 		os.Exit(-1)
 	}
+
 	// Read password
-	fmt.Printf("Password for user %s: ", USER)
-	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
-	password = string(bytePassword)
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Printf("Password for user %s: ", USER)
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		password = string(bytePassword)
 
-	// password, err := crypto  ReadPassword("Password: ")
-
-	if err != nil {
-		log.Fatalf("Error reading password %s", err.Error())
-		os.Exit(-1)
+		if err != nil {
+			log.Fatalf("Error reading password %s", err.Error())
+			os.Exit(-1)
+		}
+	} else {
+		log.Fatalf("Not running in a TTY. Unable to prompt for password")
 	}
 
 	//log.Printf("PWD: %s", password)
 	kubernetes := NewKubernetesCmd(API, USER, CLUSTER, NS, KUBECONFIG, password, INSECURE_SSL)
-	err = kubernetes.Authenticate()
+	err := kubernetes.Authenticate()
 	if err != nil {
 		log.Println(err.Error())
 		os.Exit(-1)
