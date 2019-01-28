@@ -16,7 +16,7 @@ builds:
     goarch:
     - amd64
     - 386
-    binary: pks-token
+    binary: pkstoken
 archive:
   replacements:
     darwin: Darwin
